@@ -236,31 +236,44 @@
     </script>
 
     <script>
+        // 全局变量
+        let currentLang = 'zh';
+        let audioInitialized = false;
+        
         // Audio initialization and management
         document.addEventListener('DOMContentLoaded', async () => {
-            // Initialize audio synthesizer
-            await window.audioSynthesizer.init();
+            console.log('DOM loaded, initializing audio...');
             
-            // Start mystical background music after user interaction
-            const startAudio = () => {
-                window.audioSynthesizer.startMysticalAmbient();
-                document.removeEventListener('click', startAudio);
-                document.removeEventListener('touchstart', startAudio);
-                document.removeEventListener('keydown', startAudio);
-            };
-            
-            document.addEventListener('click', startAudio);
-            document.addEventListener('touchstart', startAudio);
-            document.addEventListener('keydown', startAudio);
-            
-            // Audio toggle functionality
+            // 等待一点时间确保音频脚本加载完成
+            setTimeout(async () => {
+                try {
+                    if (window.audioSynthesizer) {
+                        await window.audioSynthesizer.init();
+                        audioInitialized = true;
+                        console.log('Audio initialized successfully');
+                        setupAudioControls();
+                        setupAudioInteraction();
+                    } else {
+                        console.error('AudioSynthesizer not found');
+                    }
+                } catch (error) {
+                    console.error('Audio initialization failed:', error);
+                }
+            }, 100);
+        });
+        
+        function setupAudioControls() {
             const audioToggle = document.getElementById('audio-toggle');
+            if (!audioToggle) {
+                console.error('Audio toggle button not found');
+                return;
+            }
+            
             const audioText = audioToggle.querySelector('.audio-text');
             const audioIcon = audioToggle.querySelector('i');
             
-            let isAudioMuted = localStorage.getItem('audio-muted') === 'true';
-            
             const updateAudioButton = () => {
+                const isAudioMuted = localStorage.getItem('audio-muted') === 'true';
                 if (isAudioMuted) {
                     audioIcon.className = 'fas fa-volume-mute mr-2';
                     audioText.textContent = currentLang === 'zh' ? '音效已关闭' : 'Audio Off';
@@ -271,40 +284,72 @@
             };
             
             audioToggle.addEventListener('click', () => {
-                isAudioMuted = !isAudioMuted;
-                localStorage.setItem('audio-muted', isAudioMuted.toString());
+                if (!audioInitialized) return;
                 
-                if (isAudioMuted) {
+                const isAudioMuted = localStorage.getItem('audio-muted') === 'true';
+                const newMutedState = !isAudioMuted;
+                localStorage.setItem('audio-muted', newMutedState.toString());
+                
+                if (newMutedState) {
                     window.audioSynthesizer.stopAll();
                 } else {
                     window.audioSynthesizer.startMysticalAmbient();
+                    // 播放点击音效
+                    setTimeout(() => {
+                        window.audioSynthesizer.playCardFlipSound();
+                    }, 100);
                 }
                 
                 updateAudioButton();
-                
-                // Play click sound if not muted
-                if (!isAudioMuted) {
-                    window.audioSynthesizer.playCardFlipSound();
-                }
+                console.log('Audio toggled:', newMutedState ? 'muted' : 'unmuted');
             });
             
-            // Initial audio button state
+            // 初始化按钮状态
             updateAudioButton();
             
-            // Play hover sounds on buttons
-            const playButton = document.querySelector('a[href="game.html"]');
-            playButton.addEventListener('mouseenter', () => {
+            // 全局暴露更新函数，供语言切换使用
+            window.updateAudioButton = updateAudioButton;
+        }
+        
+        function setupAudioInteraction() {
+            // 用户首次交互后开始背景音乐
+            const startAudio = () => {
+                if (!audioInitialized) return;
+                
+                const isAudioMuted = localStorage.getItem('audio-muted') === 'true';
                 if (!isAudioMuted) {
-                    window.audioSynthesizer.playCardFlipSound();
+                    window.audioSynthesizer.startMysticalAmbient();
+                    console.log('Background music started after user interaction');
                 }
-            });
+                
+                // 移除事件监听器
+                document.removeEventListener('click', startAudio);
+                document.removeEventListener('touchstart', startAudio);
+                document.removeEventListener('keydown', startAudio);
+            };
             
-            playButton.addEventListener('click', () => {
-                if (!isAudioMuted) {
-                    window.audioSynthesizer.playMagicSpellSound();
+            document.addEventListener('click', startAudio);
+            document.addEventListener('touchstart', startAudio);
+            document.addEventListener('keydown', startAudio);
+            
+            // 为开始游戏按钮添加音效
+            setTimeout(() => {
+                const playButton = document.querySelector('a[href="game.html"]');
+                if (playButton) {
+                    playButton.addEventListener('mouseenter', () => {
+                        if (audioInitialized && localStorage.getItem('audio-muted') !== 'true') {
+                            window.audioSynthesizer.playCardFlipSound();
+                        }
+                    });
+                    
+                    playButton.addEventListener('click', () => {
+                        if (audioInitialized && localStorage.getItem('audio-muted') !== 'true') {
+                            window.audioSynthesizer.playMagicSpellSound();
+                        }
+                    });
                 }
-            });
-        });
+            }, 200);
+        }
 
         // Language switching functionality
         const translations = {
@@ -340,7 +385,6 @@
             }
         };
 
-        let currentLang = 'zh';
         const langSwitch = document.getElementById('langSwitch');
         
         langSwitch.addEventListener('click', () => {
@@ -365,12 +409,8 @@
             });
             
             // Update audio button text
-            const audioText = document.querySelector('.audio-text');
-            const isAudioMuted = localStorage.getItem('audio-muted') === 'true';
-            if (audioText) {
-                audioText.textContent = isAudioMuted 
-                    ? (currentLang === 'zh' ? '音效已关闭' : 'Audio Off')
-                    : (currentLang === 'zh' ? '音效开启' : 'Audio On');
+            if (window.updateAudioButton) {
+                window.updateAudioButton();
             }
             
             // Store language preference

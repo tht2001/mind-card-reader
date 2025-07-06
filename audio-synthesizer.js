@@ -13,6 +13,7 @@ class AudioSynthesizer {
             this.masterGain = this.audioContext.createGain();
             this.masterGain.connect(this.audioContext.destination);
             this.masterGain.gain.value = 0.1; // 低音量
+            console.log('AudioSynthesizer initialized successfully');
         } catch (error) {
             console.warn('Web Audio API not supported:', error);
         }
@@ -24,6 +25,7 @@ class AudioSynthesizer {
         if (this.isPlaying) return;
 
         this.isPlaying = true;
+        console.log('Starting mystical ambient music');
         
         // 低频氛围音
         this.createDroneOscillator(55, 'sine', 0.02); // A1
@@ -223,6 +225,7 @@ class AudioSynthesizer {
             }
         });
         this.oscillators = [];
+        console.log('All audio stopped');
     }
 
     setVolume(volume) {
@@ -232,6 +235,5 @@ class AudioSynthesizer {
     }
 }
 
-// 导出
-window.audioSynthesizer = new AudioSynthesizer();
-export { AudioSynthesizer }; 
+// 直接挂载到window对象，不使用ES6模块导出
+window.audioSynthesizer = new AudioSynthesizer(); 

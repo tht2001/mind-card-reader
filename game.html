@@ -343,15 +343,32 @@
 
         // Fetch cards from the Deck of Cards API
         async function fetchCards() {
+            console.log('Starting to fetch cards...');
             try {
                 loadingElement.classList.remove('hidden');
                 document.getElementById('step-1').classList.add('hidden');
                 
-                const res = await fetch("https://deckofcardsapi.com/api/deck/new/draw/?count=52");
-                const data = await res.json();
+                // 使用更可靠的API调用方式
+                const deckRes = await fetch("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1");
+                if (!deckRes.ok) {
+                    throw new Error('Failed to create deck');
+                }
+                const deckData = await deckRes.json();
+                console.log('Deck created:', deckData.deck_id);
+                
+                const cardRes = await fetch(`https://deckofcardsapi.com/api/deck/${deckData.deck_id}/draw/?count=52`);
+                if (!cardRes.ok) {
+                    throw new Error('Failed to draw cards');
+                }
+                const cardData = await cardRes.json();
+                
+                if (!cardData.cards || cardData.cards.length === 0) {
+                    throw new Error('No cards received from API');
+                }
 
-                fullDeck = data.cards;
+                fullDeck = cardData.cards;
                 selectedCards = fullDeck.slice(0, 20); // Use first 20 cards for the trick
+                console.log('Cards loaded:', selectedCards.length);
 
                 // Assign binary values to each card (1-20)
                 selectedCards.forEach((card, i) => {
@@ -359,11 +376,21 @@
                     cardMap[card.binaryValue] = card;
                 });
 
+                // Clear previous cards
+                cardPickContainer.innerHTML = "";
+
                 // Add cards to the initial selection display
                 selectedCards.forEach((card) => {
                     const img = document.createElement("img");
                     img.src = card.image;
                     img.alt = `${card.value} of ${card.suit}`;
+                    
+                    // 添加错误处理
+                    img.onerror = () => {
+                        console.error('Failed to load card image:', card.image);
+                        img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iMTEyIiB2aWV3Qm94PSIwIDAgODAgMTEyIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iMTEyIiByeD0iOCIgZmlsbD0iIzMzMzMzMyIvPgo8dGV4dCB4PSI0MCIgeT0iNTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LXNpemU9IjEyIj7nuqfniYc8L3RleHQ+Cjwvc3ZnPgo='; // 后备图片
+                    };
+                    
                     cardPickContainer.appendChild(img);
                 });
 
@@ -371,9 +398,17 @@
                 
                 loadingElement.classList.add('hidden');
                 document.getElementById('step-1').classList.remove('hidden');
+                console.log('Cards display completed');
             } catch (error) {
                 console.error("Error fetching cards:", error);
-                loadingElement.innerHTML = `<div class="text-red-400">${currentLang === 'zh' ? '加载失败，请刷新页面重试' : 'Loading failed, please refresh and try again'}</div>`;
+                loadingElement.innerHTML = `<div class="text-red-400 p-4">
+                    <i class="fas fa-exclamation-triangle text-yellow-400 mr-2"></i>
+                    ${currentLang === 'zh' ? '纸牌加载失败，请检查网络连接后刷新页面' : 'Card loading failed, please check your internet connection and refresh'}
+                    <br><br>
+                    <button onclick="fetchCards()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mt-2">
+                        ${currentLang === 'zh' ? '重新加载' : 'Retry'}
+                    </button>
+                </div>`;
             }
         }
 
@@ -528,15 +563,30 @@
             updateLanguage();
             document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
             
-            // Initialize audio
-            await window.audioSynthesizer.init();
-            setupAudioControls();
+            // Initialize audio with delay
+            setTimeout(async () => {
+                try {
+                    if (window.audioSynthesizer) {
+                        await window.audioSynthesizer.init();
+                        setupAudioControls();
+                        setupGameAudioInteraction();
+                        console.log('Game audio initialized');
+                    }
+                } catch (error) {
+                    console.error('Game audio initialization failed:', error);
+                }
+            }, 100);
             
+            fetchCards();
+        });
+        
+        function setupGameAudioInteraction() {
             // Start background music after user interaction
             const startAudio = () => {
                 const isAudioMuted = localStorage.getItem('audio-muted') === 'true';
-                if (!isAudioMuted) {
+                if (!isAudioMuted && window.audioSynthesizer) {
                     window.audioSynthesizer.startMysticalAmbient();
+                    console.log('Game background music started');
                 }
                 document.removeEventListener('click', startAudio);
                 document.removeEventListener('touchstart', startAudio);
@@ -546,9 +596,7 @@
             document.addEventListener('click', startAudio);
             document.addEventListener('touchstart', startAudio);
             document.addEventListener('keydown', startAudio);
-            
-            fetchCards();
-        });
+        }
 
         // Setup audio controls
         function setupAudioControls() {
