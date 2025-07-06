@@ -13,10 +13,40 @@ class AudioSynthesizer {
             this.masterGain = this.audioContext.createGain();
             this.masterGain.connect(this.audioContext.destination);
             this.masterGain.gain.value = 0.1; // 低音量
-            console.log('AudioSynthesizer initialized successfully');
+            
+            // 移动端特殊处理 - 需要用户交互后才能启动AudioContext
+            if (this.audioContext.state === 'suspended') {
+                console.log('AudioContext suspended, waiting for user interaction');
+                this.setupMobileAudioUnlock();
+            }
+            
+            console.log('AudioSynthesizer initialized successfully, state:', this.audioContext.state);
         } catch (error) {
             console.warn('Web Audio API not supported:', error);
         }
+    }
+
+    setupMobileAudioUnlock() {
+        const unlock = async () => {
+            try {
+                await this.audioContext.resume();
+                console.log('AudioContext resumed successfully');
+                
+                // 移除事件监听器
+                document.removeEventListener('touchstart', unlock);
+                document.removeEventListener('touchend', unlock);
+                document.removeEventListener('click', unlock);
+                document.removeEventListener('keydown', unlock);
+            } catch (error) {
+                console.warn('Failed to resume AudioContext:', error);
+            }
+        };
+
+        // 添加多种事件监听器确保在移动端能够解锁音频
+        document.addEventListener('touchstart', unlock, { once: true });
+        document.addEventListener('touchend', unlock, { once: true });
+        document.addEventListener('click', unlock, { once: true });
+        document.addEventListener('keydown', unlock, { once: true });
     }
 
     // 创建神秘的氛围背景音乐
@@ -24,8 +54,19 @@ class AudioSynthesizer {
         if (!this.audioContext) await this.init();
         if (this.isPlaying) return;
 
+        // 检查AudioContext状态
+        if (this.audioContext.state === 'suspended') {
+            console.log('AudioContext still suspended, trying to resume...');
+            try {
+                await this.audioContext.resume();
+            } catch (error) {
+                console.warn('Failed to resume AudioContext:', error);
+                return;
+            }
+        }
+
         this.isPlaying = true;
-        console.log('Starting mystical ambient music');
+        console.log('Starting mystical ambient music, AudioContext state:', this.audioContext.state);
         
         // 低频氛围音
         this.createDroneOscillator(55, 'sine', 0.02); // A1
