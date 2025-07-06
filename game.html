@@ -198,10 +198,19 @@
             <span id="backHome">返回首页</span>
         </a>
         
-        <button id="langSwitch" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300">
-            <i class="fas fa-globe mr-2"></i>
-            <span id="langText">English</span>
-        </button>
+        <div class="flex gap-3">
+            <!-- Audio Toggle -->
+            <button id="audio-toggle" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300" title="切换音效">
+                <i class="fas fa-volume-up mr-2"></i>
+                <span class="audio-text">音效开启</span>
+            </button>
+            
+            <!-- Language Switcher -->
+            <button id="langSwitch" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300">
+                <i class="fas fa-globe mr-2"></i>
+                <span id="langText">English</span>
+            </button>
+        </div>
     </nav>
 
     <!-- Game Container -->
@@ -305,6 +314,12 @@
             updateLanguage();
             localStorage.setItem('preferred-language', currentLang);
             document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+            
+            // Play language switch sound
+            const isAudioMuted = localStorage.getItem('audio-muted') === 'true';
+            if (!isAudioMuted && window.audioSynthesizer) {
+                window.audioSynthesizer.playCardFlipSound();
+            }
         });
 
         function updateLanguage() {
@@ -315,6 +330,15 @@
                     element.textContent = trans[key];
                 }
             });
+            
+            // Update audio button text
+            const audioText = document.querySelector('.audio-text');
+            const isAudioMuted = localStorage.getItem('audio-muted') === 'true';
+            if (audioText) {
+                audioText.textContent = isAudioMuted 
+                    ? (currentLang === 'zh' ? '音效已关闭' : 'Audio Off')
+                    : (currentLang === 'zh' ? '音效开启' : 'Audio On');
+            }
         }
 
         // Fetch cards from the Deck of Cards API
@@ -372,6 +396,12 @@
 
         // Begin the trick
         function startTrick() {
+            // Play magic spell sound
+            const isAudioMuted = localStorage.getItem('audio-muted') === 'true';
+            if (!isAudioMuted && window.audioSynthesizer) {
+                window.audioSynthesizer.playMagicSpellSound();
+            }
+            
             document.getElementById("step-1").classList.add("hidden");
             document.getElementById("main-title").classList.add("hidden");
             document.getElementById("step-2").classList.remove("hidden");
@@ -405,6 +435,12 @@
 
         // Process the user's answer
         function answer(isYes) {
+            // Play card flip sound for answer
+            const isAudioMuted = localStorage.getItem('audio-muted') === 'true';
+            if (!isAudioMuted && window.audioSynthesizer) {
+                window.audioSynthesizer.playCardFlipSound();
+            }
+            
             if (isYes) answerBits += 1 << currentBit;
             currentBit++;
 
@@ -417,6 +453,12 @@
 
         // Reveal the selected card with animation
         function revealCard() {
+            // Play reveal sound effect
+            const isAudioMuted = localStorage.getItem('audio-muted') === 'true';
+            if (!isAudioMuted && window.audioSynthesizer) {
+                window.audioSynthesizer.playRevealSound();
+            }
+            
             document.getElementById("step-2").classList.add("hidden");
             document.getElementById("step-3").classList.remove("hidden");
 
@@ -456,6 +498,12 @@
 
         // Reset the trick
         function shuffleDeck() {
+            // Play magic spell sound for shuffle
+            const isAudioMuted = localStorage.getItem('audio-muted') === 'true';
+            if (!isAudioMuted && window.audioSynthesizer) {
+                window.audioSynthesizer.playMagicSpellSound();
+            }
+            
             document.getElementById("step-3").classList.add("hidden");
             document.getElementById("main-title").classList.remove("hidden");
             document.getElementById("step-1").classList.remove("hidden");
@@ -476,13 +524,72 @@
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             updateLanguage();
             document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+            
+            // Initialize audio
+            await window.audioSynthesizer.init();
+            setupAudioControls();
+            
+            // Start background music after user interaction
+            const startAudio = () => {
+                const isAudioMuted = localStorage.getItem('audio-muted') === 'true';
+                if (!isAudioMuted) {
+                    window.audioSynthesizer.startMysticalAmbient();
+                }
+                document.removeEventListener('click', startAudio);
+                document.removeEventListener('touchstart', startAudio);
+                document.removeEventListener('keydown', startAudio);
+            };
+            
+            document.addEventListener('click', startAudio);
+            document.addEventListener('touchstart', startAudio);
+            document.addEventListener('keydown', startAudio);
+            
             fetchCards();
         });
+
+        // Setup audio controls
+        function setupAudioControls() {
+            const audioToggle = document.getElementById('audio-toggle');
+            const audioText = audioToggle.querySelector('.audio-text');
+            const audioIcon = audioToggle.querySelector('i');
+            
+            let isAudioMuted = localStorage.getItem('audio-muted') === 'true';
+            
+            const updateAudioButton = () => {
+                if (isAudioMuted) {
+                    audioIcon.className = 'fas fa-volume-mute mr-2';
+                    audioText.textContent = currentLang === 'zh' ? '音效已关闭' : 'Audio Off';
+                } else {
+                    audioIcon.className = 'fas fa-volume-up mr-2';
+                    audioText.textContent = currentLang === 'zh' ? '音效开启' : 'Audio On';
+                }
+            };
+            
+            audioToggle.addEventListener('click', () => {
+                isAudioMuted = !isAudioMuted;
+                localStorage.setItem('audio-muted', isAudioMuted.toString());
+                
+                if (isAudioMuted) {
+                    window.audioSynthesizer.stopAll();
+                } else {
+                    window.audioSynthesizer.startMysticalAmbient();
+                    window.audioSynthesizer.playCardFlipSound();
+                }
+                
+                updateAudioButton();
+            });
+            
+            updateAudioButton();
+        }
     </script>
     </div> <!-- End content overlay -->
+
+    <!-- Audio Scripts -->
+    <script src="./audio-synthesizer.js"></script>
+    <script src="./audio-manager.js"></script>
 
     <!-- Dynamic Background Script -->
     <script type="module">
