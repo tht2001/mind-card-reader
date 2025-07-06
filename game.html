@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心灵纸牌游戏 - 开始体验读心术 | Mind Card Reader Game</title>
+    <meta name="description" content="开始心灵纸牌游戏，体验神奇的读心术。选择一张纸牌，让AI猜测您的选择。">
+    <meta name="keywords" content="心灵纸牌游戏,读心术游戏,纸牌魔术,在线游戏">
+    <link rel="canonical" href="https://your-domain.com/game.html">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            background-color: #0a0a0a;
+            min-height: 100vh;
+        }
+        
+        .dynamic-bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .dynamic-bg-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        .content-overlay {
+            position: relative;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(1px);
+            min-height: 100vh;
+        }
+        
+        .card-glow {
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        
+        .text-glow {
+            text-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+        }
+        
+        .game-container {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 1rem;
+        }
+        
+        .card-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            margin: 2rem auto 3rem auto;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            pointer-events: none;
+        }
+        
+        .card-container img {
+            position: absolute;
+            bottom: 0;
+            width: 80px;
+            transform-origin: bottom center;
+            border-radius: 8px;
+            transform: scale(1.1) rotate(0deg);
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            pointer-events: auto;
+            left: 50%;
+            z-index: 1;
+            cursor: pointer;
+        }
+        
+        .card-container img:hover {
+            transform: scale(1.2) rotate(0deg) !important;
+            box-shadow: 0 0 35px rgba(59, 130, 246, 0.8);
+            z-index: 2;
+        }
+        
+        .final-reveal {
+            justify-content: center;
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .final-reveal img {
+            position: absolute;
+            width: 150px;
+            animation: smoothReveal 0.8s ease-out forwards,
+                floatGlow 1.5s ease-in-out infinite alternate;
+            opacity: 0;
+            transform: scale(0.6) translateY(60px);
+            left: calc(50% - 75px);
+            transform-origin: center center;
+            margin: 0;
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+            border-radius: 8px;
+        }
+        
+        .final-reveal .main-card {
+            animation: smoothReveal 0.8s ease-out forwards,
+                floatGlow 1.5s ease-in-out infinite alternate;
+            z-index: 10;
+        }
+        
+        .final-reveal .floating-card {
+            animation: smoothReveal 0.8s ease-out forwards,
+                floatUp 8s ease-in-out infinite;
+            z-index: 1;
+        }
+        
+        @keyframes smoothReveal {
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        @keyframes floatGlow {
+            0% {
+                transform: scale(1) translateY(0);
+                box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+            }
+            100% {
+                transform: scale(1.05) translateY(-10px);
+                box-shadow: 0 0 35px rgba(59, 130, 246, 0.8);
+            }
+        }
+        
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+            20% {
+                opacity: 0.7;
+            }
+            80% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-200px) rotate(10deg);
+                opacity: 0;
+            }
+        }
+        
+
+        
+        @media (max-width: 768px) {
+            .card-container {
+                height: 150px;
+                margin: 1rem auto 2rem auto;
+            }
+            
+            .card-container img {
+                width: 60px;
+            }
+            
+            .final-reveal img {
+                width: 120px;
+                left: calc(50% - 60px);
+            }
+        }
+    </style>
+</head>
+<body class="text-white font-sans">
+    <!-- Dynamic Background -->
+    <div id="dynamic-bg-container" class="dynamic-bg-container"></div>
+    
+    <!-- Content Overlay -->
+    <div class="content-overlay">
+    
+    <!-- Navigation -->
+    <nav class="flex justify-between items-center p-4">
+        <a href="index.html" class="text-blue-400 hover:text-blue-300 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>
+            <span id="backHome">返回首页</span>
+        </a>
+        
+        <button id="langSwitch" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300">
+            <i class="fas fa-globe mr-2"></i>
+            <span id="langText">English</span>
+        </button>
+    </nav>
+
+    <!-- Game Container -->
+    <div id="stage" class="max-w-4xl mx-auto px-4 py-8 game-container">
+        <!-- Main Title -->
+        <h1 id="main-title" class="text-4xl md:text-6xl font-bold text-center mb-8 text-glow" style="font-family: 'Orbitron', monospace;">
+            <span id="gameTitle">选择一张纸牌并记住它</span>
+        </h1>
+        
+        <!-- Step 1: Card Selection -->
+        <div id="step-1" class="text-center">
+            <div id="card-pick" class="card-container"></div>
+            <button onclick="startTrick()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 card-glow">
+                <i class="fas fa-magic mr-3"></i>
+                <span id="selectedButton">我已经选好了</span>
+            </button>
+        </div>
+        
+        <!-- Step 2: Question Phase -->
+        <div id="step-2" class="hidden text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-8 text-glow" id="questionTitle">你看到你的纸牌了吗？</h2>
+            <div id="group-controls" class="mb-8 space-x-4">
+                <button onclick="answer(true)" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full text-lg font-semibold transition-all duration-300">
+                    <i class="fas fa-check mr-2"></i>
+                    <span id="yesButton">是的</span>
+                </button>
+                <button onclick="answer(false)" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full text-lg font-semibold transition-all duration-300">
+                    <i class="fas fa-times mr-2"></i>
+                    <span id="noButton">没有</span>
+                </button>
+            </div>
+            <div id="card-group" class="card-container"></div>
+        </div>
+        
+        <!-- Step 3: Reveal -->
+        <div id="step-3" class="hidden text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-8 text-glow" id="revealTitle">你想的是这张牌</h2>
+            <div id="revealed-card" class="card-container final-reveal"></div>
+            <button onclick="shuffleDeck()" class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 card-glow">
+                <i class="fas fa-redo mr-3"></i>
+                <span id="playAgainButton">再玩一次</span>
+            </button>
+        </div>
+        
+        <!-- Loading State -->
+        <div id="loading" class="text-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-400 mb-4"></i>
+            <p id="loadingText">正在加载纸牌...</p>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        let selectedCards = [];
+        let cardMap = {};
+        let currentBit = 0;
+        let answerBits = 0;
+        const maxBits = 5;
+        let fullDeck = [];
+
+        // DOM elements
+        const cardPickContainer = document.getElementById("card-pick");
+        const groupContainer = document.getElementById("card-group");
+        const revealContainer = document.getElementById("revealed-card");
+        const loadingElement = document.getElementById("loading");
+
+        // Language translations
+        const translations = {
+            zh: {
+                backHome: "返回首页",
+                gameTitle: "选择一张纸牌并记住它",
+                selectedButton: "我已经选好了",
+                questionTitle: "你看到你的纸牌了吗？",
+                yesButton: "是的",
+                noButton: "没有",
+                revealTitle: "你想的是这张牌",
+                playAgainButton: "再玩一次",
+                loadingText: "正在加载纸牌...",
+                langText: "English"
+            },
+            en: {
+                backHome: "Back to Home",
+                gameTitle: "Pick a Card & Remember It",
+                selectedButton: "I've Picked One",
+                questionTitle: "Do You See Your Card?",
+                yesButton: "Yes",
+                noButton: "No",
+                revealTitle: "You're Thinking Of",
+                playAgainButton: "Play Again",
+                loadingText: "Loading cards...",
+                langText: "中文"
+            }
+        };
+
+        let currentLang = localStorage.getItem('preferred-language') || 'zh';
+
+        // Language switching functionality
+        const langSwitch = document.getElementById('langSwitch');
+        langSwitch.addEventListener('click', () => {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            updateLanguage();
+            localStorage.setItem('preferred-language', currentLang);
+            document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+        });
+
+        function updateLanguage() {
+            const trans = translations[currentLang];
+            Object.keys(trans).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.textContent = trans[key];
+                }
+            });
+        }
+
+        // Fetch cards from the Deck of Cards API
+        async function fetchCards() {
+            try {
+                loadingElement.classList.remove('hidden');
+                document.getElementById('step-1').classList.add('hidden');
+                
+                const res = await fetch("https://deckofcardsapi.com/api/deck/new/draw/?count=52");
+                const data = await res.json();
+
+                fullDeck = data.cards;
+                selectedCards = fullDeck.slice(0, 20); // Use first 20 cards for the trick
+
+                // Assign binary values to each card (1-20)
+                selectedCards.forEach((card, i) => {
+                    card.binaryValue = i + 1;
+                    cardMap[card.binaryValue] = card;
+                });
+
+                // Add cards to the initial selection display
+                selectedCards.forEach((card) => {
+                    const img = document.createElement("img");
+                    img.src = card.image;
+                    img.alt = `${card.value} of ${card.suit}`;
+                    cardPickContainer.appendChild(img);
+                });
+
+                fanCards(cardPickContainer);
+                
+                loadingElement.classList.add('hidden');
+                document.getElementById('step-1').classList.remove('hidden');
+            } catch (error) {
+                console.error("Error fetching cards:", error);
+                loadingElement.innerHTML = `<div class="text-red-400">${currentLang === 'zh' ? '加载失败，请刷新页面重试' : 'Loading failed, please refresh and try again'}</div>`;
+            }
+        }
+
+        // Create fan effect for cards
+        function fanCards(container) {
+            const cards = container.querySelectorAll("img");
+            const total = cards.length;
+            const spacing = 5; // angle spacing between cards
+            const startAngle = -Math.floor(total / 2) * spacing;
+
+            cards.forEach((card, i) => {
+                const angle = startAngle + i * spacing;
+                const offset = (i - total / 2) * 25;
+                card.style.transform = `rotate(${angle}deg)`;
+                card.style.left = `calc(50% + ${offset}px)`;
+                card.style.bottom = `0`;
+                card.style.zIndex = i;
+            });
+        }
+
+        // Begin the trick
+        function startTrick() {
+            document.getElementById("step-1").classList.add("hidden");
+            document.getElementById("main-title").classList.add("hidden");
+            document.getElementById("step-2").classList.remove("hidden");
+            showNextGroup();
+        }
+
+        // Show the next group of cards based on binary position
+        function showNextGroup() {
+            groupContainer.innerHTML = "";
+
+            const bit = 1 << currentBit;
+            const group = selectedCards.filter((card) => (card.binaryValue & bit) !== 0);
+
+            // Get some extra cards that weren't in the selection to fill out the display
+            const availableExtras = fullDeck.filter((c) => !selectedCards.includes(c));
+            const shuffledExtras = availableExtras.sort(() => Math.random() - 0.5);
+            const extras = shuffledExtras.slice(0, 14 - group.length);
+
+            // Combine and shuffle
+            const combined = [...group, ...extras].sort(() => Math.random() - 0.5);
+
+            combined.forEach((card) => {
+                const img = document.createElement("img");
+                img.src = card.image;
+                img.alt = `${card.value} of ${card.suit}`;
+                groupContainer.appendChild(img);
+            });
+
+            fanCards(groupContainer);
+        }
+
+        // Process the user's answer
+        function answer(isYes) {
+            if (isYes) answerBits += 1 << currentBit;
+            currentBit++;
+
+            if (currentBit >= maxBits) {
+                revealCard();
+            } else {
+                showNextGroup();
+            }
+        }
+
+        // Reveal the selected card with animation
+        function revealCard() {
+            document.getElementById("step-2").classList.add("hidden");
+            document.getElementById("step-3").classList.remove("hidden");
+
+            const card = cardMap[answerBits];
+
+            if (card) {
+                // Create the main center card first
+                const mainCard = document.createElement("img");
+                mainCard.src = card.image;
+                mainCard.alt = `${card.value} of ${card.suit}`;
+                mainCard.className = "main-card";
+                revealContainer.appendChild(mainCard);
+
+                // Create floating background cards with delay
+                setTimeout(() => {
+                    for (let i = 0; i < 8; i++) {
+                        const img = document.createElement("img");
+                        img.src = card.image;
+                        img.alt = `${card.value} of ${card.suit}`;
+                        img.className = "floating-card";
+
+                        const randomLeft = Math.random() * 80 + 10;
+                        const randomDelay = Math.random() * 3;
+                        const randomDuration = 6 + Math.random() * 4;
+
+                        img.style.left = `${randomLeft}%`;
+                        img.style.animationDelay = `${randomDelay}s`;
+                        img.style.animationDuration = `${randomDuration}s`;
+
+                        revealContainer.appendChild(img);
+                    }
+                }, 800);
+            } else {
+                revealContainer.innerHTML = `<div class="error-message text-red-400">${currentLang === 'zh' ? '找不到纸牌，请重试！' : 'Card not found. Try again!'}</div>`;
+            }
+        }
+
+        // Reset the trick
+        function shuffleDeck() {
+            document.getElementById("step-3").classList.add("hidden");
+            document.getElementById("main-title").classList.remove("hidden");
+            document.getElementById("step-1").classList.remove("hidden");
+
+            // Clear all card containers
+            cardPickContainer.innerHTML = "";
+            groupContainer.innerHTML = "";
+            revealContainer.innerHTML = "";
+
+            // Reset variables
+            currentBit = 0;
+            answerBits = 0;
+            selectedCards = [];
+            cardMap = {};
+
+            // Start fresh
+            fetchCards();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateLanguage();
+            document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+            fetchCards();
+        });
+    </script>
+    </div> <!-- End content overlay -->
+
+    <!-- Dynamic Background Script -->
+    <script type="module">
+        import { DynamicBackground } from './dynamic-background.js';
+        
+        // Initialize dynamic background
+        const background = new DynamicBackground('dynamic-bg-container');
+        background.init();
+        
+        // Store reference globally for cleanup if needed
+        window.dynamicBackground = background;
+    </script>
+</body>
+</html> 

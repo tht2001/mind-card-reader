@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心灵纸牌 - 神奇的读心术游戏 | Mind Card Reader</title>
+    <meta name="description" content="体验神奇的心灵纸牌读心术游戏，使用先进算法猜测您心中所想的纸牌。支持中英文，完美适配PC和移动端。">
+    <meta name="keywords" content="心灵纸牌,读心术,纸牌游戏,魔术,算法,mind reading,card trick,magic,online game">
+    <meta name="author" content="Card Mind Reader">
+    <link rel="canonical" href="https://your-domain.com/">
+    <meta property="og:title" content="心灵纸牌 - 神奇的读心术游戏">
+    <meta property="og:description" content="体验神奇的心灵纸牌读心术游戏，使用先进算法猜测您心中所想的纸牌">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://your-domain.com/">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            background-color: #0a0a0a;
+        }
+        
+        .dynamic-bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .dynamic-bg-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        .content-overlay {
+            position: relative;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(1px);
+            min-height: 100vh;
+        }
+        
+        .card-glow {
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        
+        .text-glow {
+            text-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+        }
+        
+
+        
+        .hero-content {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        
+        .feature-card {
+            background: rgba(0, 0, 0, 0.6) !important;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            border-color: rgba(59, 130, 246, 0.6);
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.4);
+        }
+        
+        /* Enhanced floating animation */
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { 
+                transform: translateY(0px) rotate(0deg); 
+            }
+            50% { 
+                transform: translateY(-20px) rotate(5deg); 
+            }
+        }
+        
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .hero-content {
+                padding: 2rem 1.5rem;
+                margin: 0.5rem;
+            }
+            
+            .feature-card {
+                padding: 2rem 1.5rem !important;
+            }
+            
+            /* Mobile-specific adjustments for game steps */
+            .feature-card .grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
+        
+        /* Additional styling for step numbers */
+        .step-number {
+            transition: all 0.3s ease;
+        }
+        
+        .group:hover .step-number {
+            transform: scale(1.1) rotate(5deg);
+        }
+    </style>
+</head>
+<body class="text-white font-sans">
+    <!-- Dynamic Background -->
+    <div id="dynamic-bg-container" class="dynamic-bg-container"></div>
+    
+    <!-- Content Overlay -->
+    <div class="content-overlay">
+    <!-- Language Switcher -->
+    <div class="fixed top-4 right-4 z-50">
+        <button id="langSwitch" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300">
+            <i class="fas fa-globe mr-2"></i>
+            <span id="langText">English</span>
+        </button>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="min-h-screen flex items-center justify-center px-4 py-20">
+        <div class="max-w-6xl mx-auto text-center">
+            <!-- Main Hero Content -->
+            <div class="hero-content mb-20">
+                <div class="floating mb-8">
+                    <i class="fas fa-magic text-6xl md:text-7xl text-blue-400 mb-6"></i>
+                </div>
+                
+                <h1 class="text-5xl md:text-7xl font-bold mb-6 text-glow" style="font-family: 'Orbitron', monospace;">
+                    <span id="mainTitle">心灵纸牌</span>
+                </h1>
+                
+                <p class="text-xl md:text-2xl mb-10 text-blue-200 max-w-2xl mx-auto leading-relaxed" id="subtitle">
+                    体验神奇的读心术，让AI猜测您心中所想的纸牌
+                </p>
+                
+                <a href="game.html" class="inline-flex items-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-10 py-4 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 card-glow shadow-xl">
+                    <i class="fas fa-play mr-3"></i>
+                    <span id="playButton">开始游戏</span>
+                </a>
+            </div>
+            
+            <!-- Game Instructions -->
+            <div class="max-w-4xl mx-auto">
+                <div class="feature-card rounded-xl p-8 md:p-12 card-glow">
+                    <h2 class="text-3xl md:text-4xl font-bold text-center mb-8 text-glow" id="howToPlayTitle">游戏步骤</h2>
+                    
+                    <div class="grid md:grid-cols-3 gap-8">
+                        <div class="text-center group">
+                            <div class="step-number bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold mx-auto mb-6 shadow-lg">
+                                1
+                            </div>
+                            <h3 class="text-xl font-semibold mb-4 text-blue-400" id="step1Title">选择纸牌</h3>
+                            <p class="text-gray-300 leading-relaxed" id="step1">从20张纸牌中心中选择一张，并牢记它</p>
+                        </div>
+                        
+                        <div class="text-center group">
+                            <div class="step-number bg-gradient-to-br from-purple-500 to-pink-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold mx-auto mb-6 shadow-lg">
+                                2
+                            </div>
+                            <h3 class="text-xl font-semibold mb-4 text-purple-400" id="step2Title">回答问题</h3>
+                            <p class="text-gray-300 leading-relaxed" id="step2">系统会展示5组纸牌，每次询问是否看到您的纸牌</p>
+                        </div>
+                        
+                        <div class="text-center group">
+                            <div class="step-number bg-gradient-to-br from-pink-500 to-red-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold mx-auto mb-6 shadow-lg">
+                                3
+                            </div>
+                            <h3 class="text-xl font-semibold mb-4 text-pink-400" id="step3Title">揭晓答案</h3>
+                            <p class="text-gray-300 leading-relaxed" id="step3">根据您的回答，系统将精准猜出您心中的纸牌</p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-12">
+                        <div class="inline-flex items-center bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-full text-lg font-medium">
+                            <i class="fas fa-magic mr-3"></i>
+                            <span id="magicText">准备好体验魔术了吗？</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Footer -->
+    <footer class="py-12 px-4 border-t border-white/10 backdrop-blur-sm">
+        <div class="max-w-6xl mx-auto text-center">
+            <div class="feature-card rounded-xl p-6 inline-block">
+                <p class="text-gray-300 text-lg" id="copyright">© 2024 心灵纸牌. 所有权利保留.</p>
+            </div>
+        </div>
+    </footer>
+    </div> <!-- End content overlay -->
+
+    <!-- Dynamic Background Script -->
+    <script type="module">
+        import { DynamicBackground } from './dynamic-background.js';
+        
+        // Initialize dynamic background
+        const background = new DynamicBackground('dynamic-bg-container');
+        background.init();
+        
+        // Store reference globally for cleanup if needed
+        window.dynamicBackground = background;
+    </script>
+
+    <script>
+        // Language switching functionality
+        const translations = {
+            zh: {
+                mainTitle: "心灵纸牌",
+                subtitle: "体验神奇的读心术，让AI猜测您心中所想的纸牌",
+                playButton: "开始游戏",
+                howToPlayTitle: "游戏步骤",
+                step1Title: "选择纸牌",
+                step1: "从20张纸牌中心中选择一张，并牢记它",
+                step2Title: "回答问题",
+                step2: "系统会展示5组纸牌，每次询问是否看到您的纸牌",
+                step3Title: "揭晓答案",
+                step3: "根据您的回答，系统将精准猜出您心中的纸牌",
+                magicText: "准备好体验魔术了吗？",
+                copyright: "© 2024 心灵纸牌. 所有权利保留.",
+                langText: "English"
+            },
+            en: {
+                mainTitle: "Mind Card Reader",
+                subtitle: "Experience magical mind reading - let AI guess the card you're thinking of",
+                playButton: "Start Game",
+                howToPlayTitle: "How to Play",
+                step1Title: "Pick a Card",
+                step1: "Choose one card from 20 cards and remember it",
+                step2Title: "Answer Questions",
+                step2: "System will show 5 groups of cards, asking if you see your card each time",
+                step3Title: "Reveal Magic",
+                step3: "Based on your answers, the system will accurately guess your chosen card",
+                magicText: "Ready to experience the magic?",
+                copyright: "© 2024 Mind Card Reader. All rights reserved.",
+                langText: "中文"
+            }
+        };
+
+        let currentLang = 'zh';
+        const langSwitch = document.getElementById('langSwitch');
+        
+        langSwitch.addEventListener('click', () => {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            updateLanguage();
+            document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+        });
+
+        function updateLanguage() {
+            const trans = translations[currentLang];
+            Object.keys(trans).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.textContent = trans[key];
+                }
+            });
+            
+            // Store language preference
+            localStorage.setItem('preferred-language', currentLang);
+        }
+
+        // Load saved language preference
+        const savedLang = localStorage.getItem('preferred-language');
+        if (savedLang && savedLang !== currentLang) {
+            currentLang = savedLang;
+            updateLanguage();
+            document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+        }
+    </script>
+</body>
+</html> 
